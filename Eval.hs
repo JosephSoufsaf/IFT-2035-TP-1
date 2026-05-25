@@ -3,6 +3,7 @@
 module Eval where
 
 import Parseur ( Sexp(..), Symbol )
+import GHC.Exts.Heap (GenClosure(queue))
 
 -- ===========================================================================
 -- Types
@@ -269,15 +270,51 @@ eval env (ELet defs body) = eval env2 body where
 --   - constructeur sans argument → VData "Nom" []
 --   - constructeur avec n arguments → une suite de VPrim qui accumulent
 --     les arguments et produisent un VData quand tous sont fournis.
-eval _ (EData _ _) = error "TODO: implanter eval pour EData"
-eval env (EData datatypes exp) = 
+eval env (EData dts body) = eval env2 body
+  where
+    env2 = ajouterType dts ++ env
 
+    ajouterType [] = []
+    ajouterType ((_, constrsuctor) : queue) = ajouterConstructeur constrsuctor ++ ajouterType queue
+
+    ajouterConstructeur [] = []
+    ajouterConstructeur ((nomConstructor, args) : queue) = (nomConstructor, creerValeur nomConstructor args) : ajouterConstructeur queue
+
+    creerValeur nomConstructor args = case args of
+      [] -> VData nomConstructor []
+      _  -> accumulerArgs  nomConstructor (compter args) []
+        
+
+    accumulerArgs  nom 0 acc = VData nom (inverser acc)
+    accumulerArgs  nom n acc = VPrim (\v -> accumulerArgs  nom (n-1) (v:acc))
+
+    inverser :: [a] -> [a]
+    inverser [] = []
+    inverser (x:xs) = inverser xs ++ [x] 
+
+    compter :: [a] -> Int
+    compter [] = 0
+    compter (_:xs) = 1 + compter xs
 
 -- TODO: Évaluer un case.
 -- Évaluer l'expression scrutée (doit donner un VData).
 -- Trouver le motif dont le constructeur correspond, lier les variables
 -- aux arguments du VData, puis évaluer le corps dans cet environnement étendu.
-eval _ (ECase _ _) = error "TODO: implanter eval pour ECase"
+eval env (ECase scrutin branches) =
+  case eval env scrutin of
+    VData nom args -> eval (combiner vars args ++ env) corps
+      where (vars, corps) = trouverBranche branches nom
+  where
+    trouverBranche [] nom = error "Pas de branche pour ce constructeur"
+    trouverBranche ((nomConstr, vars, corps) : reste) nom =
+      case nomConstr == nom of
+        True  -> (vars, corps)
+        False -> trouverBranche reste nom
+
+    combiner [] _ = []
+    combiner _ [] = []
+    combiner (v:vs) (a:as) = (v, a) : combiner vs as
+
 
 -- ===========================================================================
 -- Vérification de types

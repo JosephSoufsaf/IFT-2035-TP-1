@@ -1,6 +1,5 @@
 -- Test 1 : Addition de base
-(((+ 1) 2)
- 3)
+(((+ 1) 2) 3)
 
 -- Test 2 : Multiplication de base
 (((* 1) 2)
@@ -10,7 +9,7 @@
 (((- 1) 2)
  -1)
 
--- Test 4 : Lambda à un paramètre (fonction identité appliquée)
+-- Test 4 : Lambda à un paramètr  e (fonction identité appliquée)
 (((lambda ((x Int)) x) 4)
   4)
 
