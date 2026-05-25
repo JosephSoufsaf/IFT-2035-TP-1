@@ -1,0 +1,124 @@
+-- Test 1 : Addition de base
+(((+ 1) 2)
+ 3)
+
+-- Test 2 : Multiplication de base
+(((* 1) 2)
+ 2)
+
+-- Test 3 : Soustraction de base
+(((- 1) 2)
+ -1)
+
+-- Test 4 : Lambda à un paramètre (fonction identité appliquée)
+(((lambda ((x Int)) x) 4)
+  4)
+
+-- Test 5 : Lambda imbriqué (currying) — addition de deux entiers
+((((lambda ((x Int))
+      (lambda ((y Int)) ((+ x) y)))
+    6) 8)
+  14)
+
+-- Test 6 : Lambda sans paramètre → Erreur de syntaxe
+((lambda () 5)
+ Erreur) 
+
+-- Test 7 : Sucre syntaxique — lambda multi-paramètres
+(((lambda ((x Int) (y Int)) (+ x y)) 6 8)
+ 14)
+
+-- Test 8 : Deux paramètres avec le même nom → Erreur
+(((lambda ((x Int) (x Int)) (+ x y)) 6 8)
+ Erreur)
+
+-- Test 9 : Type Bool non déclaré utilisé comme paramètre → Erreur de type
+(((lambda ((x Bool) (y Int)) (+ x y)) 6 8)
+ Erreur)
+
+-- Test 10 : Let avec une seule liaison
+((let ((x Int 5)) (+ x x))
+ 10)
+
+-- Test 11 : Let avec deux liaisons indépendantes
+((let ((x Int 5)
+       (y Int 8))
+     (+ x y))
+ 13)
+
+-- Test 12 : Let séquentiel — x défini avant y, y peut référencer x
+((let ((x Int 5)
+       (y Int x))
+     (+ x y))
+ 10)
+
+-- Test 13 : Let séquentiel inverse — x référence y défini plus loin
+((let ((x Int y)
+       (y Int 7))
+     (+ x y))
+ 14)
+
+-- Test 14 : Let avec une fonction et une variable entière
+((let ((x (Int Int) (lambda ((x Int)) (+ x x)))
+       (y Int 3))
+     (x y))
+ 6)
+
+-- Test 15 : Déclaration de type algébrique simple (Bool) et liaison
+((data ((Bool True False))
+   (let ((x Bool True)) x))
+ (data ((Bool True False)) True))
+
+-- Test 16 : Redéfinition du type Int primitif → Erreur
+((data ((Int A B)) A)
+ Erreur)
+
+-- Test 17 : Case simple sans variables liées
+((data ((Bool True False))
+   (case True ((True 1) (False 0))))
+ 1)
+
+-- Test 18 : Case avec variables liées dans le motif
+((data ((Pair (MkPair Int Int)))
+   (case (MkPair 3 4) (((MkPair a b) (+ a b)))))
+ 7)
+
+-- Test 19 : Case non exhaustif — branche False manquante → Erreur
+((data ((Bool True False))
+   (case True ((True 1))))
+ Erreur)
+
+-- Test 20 : Variable non liée dans l'environnement → Erreur
+(x
+ Erreur)
+
+-- Test 21 : Application d'un entier comme fonction → Erreur
+((5 3)
+ Erreur)
+
+-- Test 22 : Extraction de la tête d'une liste (exemple de la spec)
+((data ((ListInt Nil (Cons Int ListInt)))
+   (case (Cons 4 Nil)
+     ((Nil 0)
+      ((Cons x xs) x))))
+ 4)
+
+-- Test 23 : Négation booléenne (exemple direct de la spécification)
+((data ((Bool True False))
+   (let ((neg (Bool Bool)
+              (lambda ((x Bool))
+                (case x ((True False) (False True))))))
+     (neg True)))
+ (data ((Bool True False)) False))
+
+-- Test 24 : lambda utilisé comme variable → Erreur
+(lambda
+ Erreur)
+
+-- Test 25 : case utilisé comme variable → Erreur
+(case
+ Erreur)
+
+-- Test 26 : data utilisé comme variable → Erreur
+(data
+ Erreur)
