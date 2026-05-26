@@ -4,6 +4,7 @@ module Eval where
 
 import Parseur ( Sexp(..), Symbol )
 import GHC.Exts.Heap (GenClosure(queue))
+import Data.List
 
 -- ===========================================================================
 -- Types
@@ -341,19 +342,48 @@ lookupSym (_ : xs) sym = lookupSym xs sym
 typeCheck :: Tenv -> Exp -> Either Error Type
 typeCheck _ (EInt _) = Right TInt
 typeCheck env (EVar sym) = lookupSym env sym
+
 -- TODO: Vérifier le type d'un lambda.
 -- Le paramètre x de type t est ajouté à l'environnement pour typer le corps.
 -- Le type retourné est TArrow t typeCorps.
-typeCheck _ (ELam _ _ _) = error "TODO: implanter typeCheck pour ELam"
+typeCheck env (ELam x t body) = do
+  typeBody <- typeCheck ((x, t) : env) body
+  return (TArrow t typeBody)
+
 -- TODO: Vérifier le type d'une application f arg.
 -- f doit avoir un type TArrow t1 t2, arg doit avoir le type t1.
 -- Le type retourné est t2.
-typeCheck _ (EApp _ _)   = error "TODO: implanter typeCheck pour EApp"
+typeCheck env (EApp f arg)   = do
+  typeF <- typeCheck env f
+  typeArg <- typeCheck env arg
+  case typeF of
+    TArrow t1 t2
+      | t1 == typeArg -> Right t2
+      | otherwise -> Left $ "Erreur type argument:" 
+      ++ "type attendu = " ++ show t1 ++ ", type recu = " ++ show typeArg
+    _ -> Left $ "Type " ++  show typeF ++ " n'est pas une fonction dans l'application"
+    
+
 -- TODO: Vérifier le type d'un let.
 -- Toutes les liaisons sont visibles les unes des autres (récursion mutuelle) :
 -- construire env2 avec les types déclarés, vérifier chaque expression,
 -- puis typer le corps dans env2.
-typeCheck _ (ELet _ _)   = error "TODO: implanter typeCheck pour ELet"
+typeCheck env (ELet defs body)   = do
+  let names = map (\(n, _, _) -> n) defs
+  if length names /= length (nub names)
+    then Left "Liaisons non distinctes"
+    else do
+      let env2 = map (\(n, t, _) -> (n, t)) defs ++ env
+      mapM_ (\(n, t, e) -> do
+                typeRight <- typeCheck env2 e
+                if typeRight == t
+                  then Right ()
+                  else Left $ "Type incorrect pour " ++ n ++ ": attendu "
+                  ++ show t ++ ", inféré " ++ show typeRight
+                  ) defs
+      typeCheck env2 body   
+  
+
 -- TODO: Vérifier le type d'une déclaration data.
 -- Vérifications à effectuer :
 --   1. Int ne peut pas être redéfini
@@ -363,7 +393,25 @@ typeCheck _ (ELet _ _)   = error "TODO: implanter typeCheck pour ELet"
 -- Chaque constructeur (Nom T1 T2) introduit une liaison dans l'environnement
 -- de type : Nom :: T1 -> T2 -> NomType.
 -- Le corps est ensuite typé dans cet environnement étendu.
-typeCheck _ (EData _ _) = error "TODO: implanter typeCheck pour EData"
+typeCheck env (EData dts body) = do
+  let typeNames = map fst dts
+  if "Int" `elem` typeNames
+    then Left "Int ne peut pas être redéfini"
+    else if length typeNames /= length (nub typeNames)
+      then Left "Les noms de types doivent être distincts"
+      else do
+        let ctorNames = concatMap (\(_, cs) -> map fst cs) dts
+        if length ctorNames /= length (nub ctorNames)
+          then Left "Noms de constructeurs non distincts"
+          else do
+            let ctorBindings = concatMap(\(tn, cs) -> map (\(cn, args) ->
+                  (cn, foldr TArrow (TData tn) args)) cs)
+                  dts
+
+            let env2 = ctorBindings ++ env
+            typeCheck env2 body
+
+
 -- TODO: Vérifier le type d'un case.
 -- L'expression scrutée doit être de type TData nomType.
 -- Pour chaque motif :
@@ -373,4 +421,40 @@ typeCheck _ (EData _ _) = error "TODO: implanter typeCheck pour EData"
 -- Vérifications supplémentaires :
 --   - tous les constructeurs du type doivent être couverts (exhaustivité)
 --   - tous les corps doivent avoir le même type
-typeCheck _ (ECase _ _) = error "TODO: implanter typeCheck pour ECase"
+typeCheck env (ECase scrutin branches) = do
+  typeScrutin <- typeCheck env scrutin
+  case typeScrutin of
+    TData dt -> do
+      typeBranches <- mapM (checkBranch env dt) branches
+      case typeBranches of
+        [] -> Left "case sans branches"
+        (t : ts) ->
+          if not (all (== t) ts)
+            then Left "Toutes les branches doivent avoir le même type"
+            else
+              let patternCtors = sort (map (\(cn, _, _) -> cn) branches)
+                  allCtors     = sort [name | (name, ty) <- env, returnsType dt ty]
+              in if patternCtors == allCtors
+                   then Right t
+                   else Left "case non exhaustif"
+    _ -> Left "L'expression scrutée doit être de type algébrique"
+  where
+    checkBranch env' dt (cn, vars, body) = do
+      ctorType <- lookupSym env' cn
+      let (argTypes, returnType) = uncurryArrows ctorType
+      if returnType /= TData dt
+        then Left $ cn ++ " n'est pas un constructeur de " ++ dt
+        else if length argTypes /= length vars
+          then Left $ "Arité incorrecte pour " ++ cn
+          ++ ": attendu " ++ show (length argTypes)
+          ++ ", reçu " ++ show (length vars)
+          else typeCheck (zip vars argTypes ++ env') body
+
+    uncurryArrows (TArrow t rest) =
+      let (args, ret) = uncurryArrows rest
+      in (t : args, ret)
+    uncurryArrows t = ([], t)
+
+    returnsType dt' (TData d) = dt' == d
+    returnsType dt' (TArrow _ rest) = returnsType dt' rest
+    returnsType _ _ = False
