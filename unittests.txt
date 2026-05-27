@@ -1,5 +1,6 @@
 -- Test 1 : Addition de base
-(((+ 1) 2) 3)
+(((+ 1) 2)
+ 3)
 
 -- Test 2 : Multiplication de base
 (((* 1) 2)
