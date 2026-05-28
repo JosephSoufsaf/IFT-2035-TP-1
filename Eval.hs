@@ -520,7 +520,9 @@ typeCheck env (ECase scrutin branches) = do
             then Left "Toutes les branches doivent avoir le même type"
             else
               let patternCtors = sort (map (\(cn, _, _) -> cn) branches)
-                  allCtors     = sort [name | (name, ty) <- env, returnsType dt ty]
+                  allCtors     = sort [name | (name, ty) <- env,
+                    returnsType dt ty,
+                    isConstructor name]
               in if patternCtors == allCtors
                    then Right t
                    else Left "case non exhaustif"
@@ -545,3 +547,7 @@ typeCheck env (ECase scrutin branches) = do
     returnsType dt' (TData d) = dt' == d
     returnsType dt' (TArrow _ rest) = returnsType dt' rest
     returnsType _ _ = False
+
+    isConstructor :: Symbol -> Bool
+    isConstructor (c:_) = c `elem` ['A'..'Z']
+    isConstructor _     = False
