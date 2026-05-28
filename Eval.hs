@@ -201,14 +201,101 @@ sexp2Exp (SList [SSym "let", SList definitions, body]) = do
 -- suivis de ses constructeurs. Un constructeur est soit un symbole (0 argument)
 -- soit une liste (nom + types des arguments).
 -- Retourner EData avec la liste des NewDataType et le corps parsé.
-sexp2Exp (SList [SSym "data", SList _, _]) = error "TODO: implanter sexp2Exp pour EData"
+-- sexp2Exp (SList [SSym "data", SList _, _]) = error "TODO: implanter sexp2Exp pour EData"
+
+sexp2Exp (SList [SSym "data", SList declarationsTypes, corps]) =
+  case sexp2Exp corps of
+    Left erreur -> Left erreur
+    Right corpsParse ->
+      case parserDeclarations declarationsTypes of
+        Left erreur -> Left erreur
+        Right declarationsParsees -> Right (EData declarationsParsees corpsParse)
+  where
+    parserDeclarations [] = Right []
+    parserDeclarations (declaration:resteDeclarations) =
+      case parserUneDeclaration declaration of
+        Left erreur -> Left erreur
+        Right declarationParsee ->
+          case parserDeclarations resteDeclarations of
+            Left erreur -> Left erreur
+            Right resteParses -> Right (declarationParsee:resteParses)
+
+    parserUneDeclaration (SList (SSym nomType : constructeurs)) =
+      case parserConstructeurs constructeurs of
+        Left erreur -> Left erreur
+        Right constructeurParses -> Right (nomType, constructeurParses)
+    parserUneDeclaration _ = Left "Syntax Error: une declaration de type doit etre de la forme (NomType Con1 (Con2 T1 T2) ...)"
+
+    parserConstructeurs [] = Right []
+    parserConstructeurs (constructeur:resteConstructeurs) =
+      case parserUnConstructeur constructeur of
+        Left erreur -> Left erreur
+        Right constructeurParse ->
+          case parserConstructeurs resteConstructeurs of
+            Left erreur -> Left erreur
+            Right resteParses -> Right (constructeurParse:resteParses)
+
+    parserUnConstructeur (SSym nomConstructeur) = Right (nomConstructeur, [])
+    parserUnConstructeur (SList (SSym nomConstructeur : typesArguments)) =
+      case parserTypesArguments typesArguments of
+        Left erreur -> Left erreur
+        Right typesParsees -> Right (nomConstructeur, typesParsees)
+    parserUnConstructeur _ = Left "Syntax Error: un constructeur doit etre un symbole ou une liste (Nom T1 T2 ...)"
+
+    parserTypesArguments [] = Right []
+    parserTypesArguments (typeArg:resteTypes) =
+      case sexp2type typeArg of
+        Left erreur -> Left erreur
+        Right typeParse ->
+          case parserTypesArguments resteTypes of
+            Left erreur -> Left erreur
+            Right resteParses -> Right (typeParse:resteParses)
+
+
 
 -- TODO: Analyse d'un filtrage par motif.
 -- Syntaxe : (case expr ((Con1 corps1) ((Con2 x y) corps2) ...))
 -- Chaque motif est soit (Con corps) pour un constructeur sans argument,
 -- soit ((Con x y ...) corps) pour un constructeur avec variables liées.
 -- Retourner ECase avec l'expression scrutée et la liste des CasePattern.
-sexp2Exp (SList [SSym "case", _, SList _]) = error "TODO: implanter sexp2Exp pour ECase"
+sexp2Exp (SList [SSym "case", expression, SList branches]) =
+  case sexp2Exp expression of
+    Left err -> Left err
+    Right expression ->
+      case parserBranches branches of
+        Left err -> Left err
+        Right branches -> Right (ECase expression branches)
+  where
+    parserBranches [] = Right []
+    parserBranches (x:xs) =
+      case parseBranche x of
+        Left error -> Left error
+        Right branch ->
+          case parserBranches xs of
+            Left err -> Left err
+            Right bs -> Right (branch:bs)
+
+    parseBranche (SList [SSym con, body]) =
+      case sexp2Exp body of
+        Left error -> Left error
+        Right body' -> Right (con, [], body')
+    parseBranche (SList [SList (SSym con : vars), body]) =
+      case parserVariables vars of
+        Left error -> Left error
+        Right vs ->
+          case sexp2Exp body of
+            Left err -> Left err
+            Right body' -> Right (con, vs, body')
+    parseBranche _ = Left "Syntax Error: une branche du case doit etre de la forme (Constructeur corps) ou ((Constructeur x y ...) corps)"
+
+    parserVariables [] = Right []
+    parserVariables (x:xs) =
+      case id2Exp x of
+        Left err -> Left err
+        Right v ->
+          case parserVariables xs of
+            Left err -> Left err
+            Right vs -> Right (v:vs)
 
 -- Application gauche-associative :
 -- (f a b c) → EApp (EApp (EApp f a) b) c
