@@ -364,7 +364,42 @@
   <!-- ECRIRE ICI LA DESCRIPTION DE IMPLEMENTATION TYPECHECK POUR ELAM, EAPP, ELET, EDATA, ECASE -->
 
   <div class="placeholder">
-
+    <p>
+      <ul>
+        <li>
+          ELam: On ajoute le paramètre avec son type dans l’environnement. 
+          Le corps du lambda va être typé dans un environnement étendu.
+          Le typeCheck retourne le type fonction TArrow formé
+          avec le paramètre et le type du corps. 
+        </li>
+        <li>
+          EApp: Le typeCheck vérifie la fonction et l’argument de l’application.
+          Aussi, le typeCheck vérifie le type fonction s’il correspond au type
+          de l’argument entrée (t1). Le type de sortie (t2) est retourné si cela
+          est équivalent. Si le type fonction n’est pas TArrow, il y aura une erreur.
+        </li>
+        <li>
+          ELet: Le typeCheck vérifie si les noms des liaisons sont distincts.
+          Ensuite, on étend l'environnement avec tous les types déclarés en même
+          temps pour que les liaisons soient mutuellement récursives.
+          Le type inféré de la partie droite doit correspondre au type déclaré.
+          On retourne le type du corps, vérifié dans l'environnement étendu (env2). 
+        </li>
+        <li>
+          EData: Le typeCheck vérifie que les types algébriques
+          déclarés ne redéfinissent pas Int et que les noms de types et de constructeurs sont distincts. 
+          Quand les validations sont respectées, une fonction d’ordre supérieur
+          est appliquée (foldr) pour le type fonction du constructeur. 
+        </li>
+        <li>
+          ECase: Le typeCheck assure que l’expression scrutée doit être type TData.
+          Pour chaque branche, le type du constructeur est récupéré.
+          Le type algébrique et l’arité du constructeur sont vérifiés.
+          Tous les constructeurs doivent être couverts et toutes les branches
+          doivent être du même type.
+        </li>
+      </ul>
+    </p>
   </div>
 
 
