@@ -206,50 +206,46 @@ sexp2Exp (SList [SSym "let", SList definitions, body]) = do
 sexp2Exp (SList [SSym "data", SList declarationsTypes, corps]) =
   case sexp2Exp corps of
     Left erreur -> Left erreur
-    Right corpsParse ->
-      case parserDeclarations declarationsTypes of
+    Right corpsConvertit ->
+      case convertirDeclarations declarationsTypes of
         Left erreur -> Left erreur
-        Right declarationsParsees -> Right (EData declarationsParsees corpsParse)
+        Right declarationsConverties -> Right (EData declarationsConverties corpsConvertit)
   where
-    parserDeclarations [] = Right []
-    parserDeclarations (declaration:resteDeclarations) =
-      case parserUneDeclaration declaration of
+    convertirDeclarations [] = Right []
+    convertirDeclarations (declaration:resteDeclarations) =
+      case convertirUneDeclaration declaration of
         Left erreur -> Left erreur
-        Right declarationParsee ->
-          case parserDeclarations resteDeclarations of
+        Right declarationConvertie ->
+          case convertirDeclarations resteDeclarations of
             Left erreur -> Left erreur
-            Right resteParses -> Right (declarationParsee:resteParses)
-
-    parserUneDeclaration (SList (SSym nomType : constructeurs)) =
-      case parserConstructeurs constructeurs of
+            Right resteConvertis -> Right (declarationConvertie:resteConvertis)
+    convertirUneDeclaration (SList (SSym nomType : constructeurs)) =
+      case convertirConstructeurs constructeurs of
         Left erreur -> Left erreur
-        Right constructeurParses -> Right (nomType, constructeurParses)
-    parserUneDeclaration _ = Left "Syntax Error: une declaration de type doit etre de la forme (NomType Con1 (Con2 T1 T2) ...)"
-
-    parserConstructeurs [] = Right []
-    parserConstructeurs (constructeur:resteConstructeurs) =
-      case parserUnConstructeur constructeur of
+        Right constructeursConvertis -> Right (nomType, constructeursConvertis)
+    convertirUneDeclaration _ = Left "Syntax Error: une declaration de type doit etre de la forme (NomType Con1 (Con2 T1 T2) ...)"
+    convertirConstructeurs [] = Right []
+    convertirConstructeurs (constructeur:resteConstructeurs) =
+      case convertirUnConstructeur constructeur of
         Left erreur -> Left erreur
-        Right constructeurParse ->
-          case parserConstructeurs resteConstructeurs of
+        Right constructeurConvertit ->
+          case convertirConstructeurs resteConstructeurs of
             Left erreur -> Left erreur
-            Right resteParses -> Right (constructeurParse:resteParses)
-
-    parserUnConstructeur (SSym nomConstructeur) = Right (nomConstructeur, [])
-    parserUnConstructeur (SList (SSym nomConstructeur : typesArguments)) =
-      case parserTypesArguments typesArguments of
+            Right resteConvertis -> Right (constructeurConvertit:resteConvertis)
+    convertirUnConstructeur (SSym nomConstructeur) = Right (nomConstructeur, [])
+    convertirUnConstructeur (SList (SSym nomConstructeur : typesArguments)) =
+      case convertirTypesArguments typesArguments of
         Left erreur -> Left erreur
-        Right typesParsees -> Right (nomConstructeur, typesParsees)
-    parserUnConstructeur _ = Left "Syntax Error: un constructeur doit etre un symbole ou une liste (Nom T1 T2 ...)"
-
-    parserTypesArguments [] = Right []
-    parserTypesArguments (typeArg:resteTypes) =
+        Right typesConvertis -> Right (nomConstructeur, typesConvertis)
+    convertirUnConstructeur _ = Left "Syntax Error: un constructeur doit etre un symbole ou une liste (Nom T1 T2 ...)"
+    convertirTypesArguments [] = Right []
+    convertirTypesArguments (typeArg:resteTypes) =
       case sexp2type typeArg of
         Left erreur -> Left erreur
-        Right typeParse ->
-          case parserTypesArguments resteTypes of
+        Right typeConvertit ->
+          case convertirTypesArguments resteTypes of
             Left erreur -> Left erreur
-            Right resteParses -> Right (typeParse:resteParses)
+            Right resteConvertis -> Right (typeConvertit:resteConvertis)
 
 
 
@@ -259,43 +255,42 @@ sexp2Exp (SList [SSym "data", SList declarationsTypes, corps]) =
 -- soit ((Con x y ...) corps) pour un constructeur avec variables liées.
 -- Retourner ECase avec l'expression scrutée et la liste des CasePattern.
 sexp2Exp (SList [SSym "case", expression, SList branches]) =
-  case sexp2Exp expression of
-    Left err -> Left err
-    Right expression ->
-      case parserBranches branches of
-        Left err -> Left err
-        Right branches -> Right (ECase expression branches)
+ case sexp2Exp expression of
+    Left erreur -> Left erreur
+    Right expressionConvertie ->
+      case convertirBranches branches of
+        Left erreur -> Left erreur
+        Right branchesConverties -> Right (ECase expressionConvertie branchesConverties)
   where
-    parserBranches [] = Right []
-    parserBranches (x:xs) =
-      case parseBranche x of
-        Left error -> Left error
-        Right branch ->
-          case parserBranches xs of
-            Left err -> Left err
-            Right bs -> Right (branch:bs)
-
-    parseBranche (SList [SSym con, body]) =
-      case sexp2Exp body of
-        Left error -> Left error
-        Right body' -> Right (con, [], body')
-    parseBranche (SList [SList (SSym con : vars), body]) =
-      case parserVariables vars of
-        Left error -> Left error
-        Right vs ->
-          case sexp2Exp body of
-            Left err -> Left err
-            Right body' -> Right (con, vs, body')
-    parseBranche _ = Left "Syntax Error: une branche du case doit etre de la forme (Constructeur corps) ou ((Constructeur x y ...) corps)"
-
-    parserVariables [] = Right []
-    parserVariables (x:xs) =
-      case id2Exp x of
-        Left err -> Left err
-        Right v ->
-          case parserVariables xs of
-            Left err -> Left err
-            Right vs -> Right (v:vs)
+    convertirBranches [] = Right []
+    convertirBranches (branche:resteBranches) =
+      case convertirUneBranche branche of
+        Left erreur -> Left erreur
+        Right brancheConvertie ->
+          case convertirBranches resteBranches of
+            Left erreur -> Left erreur
+            Right resteConverties -> Right (brancheConvertie:resteConverties)
+    convertirUneBranche (SList [SSym nomConstructeur, corps]) =
+      case sexp2Exp corps of
+        Left erreur -> Left erreur
+        Right corpsConvertit -> Right (nomConstructeur, [], corpsConvertit)
+    convertirUneBranche (SList [SList (SSym nomConstructeur : variables), corps]) =
+      case convertirVariables variables of
+        Left erreur -> Left erreur
+        Right variablesConverties ->
+          case sexp2Exp corps of
+            Left erreur -> Left erreur
+            Right corpsConvertit -> Right (nomConstructeur, variablesConverties, corpsConvertit)
+    convertirUneBranche _ = Left "Syntax Error: une branche du case doit etre de la forme (Constructeur corps) ou ((Constructeur x y ...) corps)"
+    convertirVariables [] = Right []
+    convertirVariables (variable:resteVariables) =
+      case id2Exp variable of
+        Left erreur -> Left erreur
+        Right variableConvertie ->
+          case convertirVariables resteVariables of
+            Left erreur -> Left erreur
+            Right resteConverties -> Right (variableConvertie:resteConverties)
+  
 
 -- Application gauche-associative :
 -- (f a b c) → EApp (EApp (EApp f a) b) c
