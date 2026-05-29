@@ -364,7 +364,7 @@
   <!-- ECRIRE ICI LA DESCRIPTION DE IMPLEMENTATION TYPECHECK POUR ELAM, EAPP, ELET, EDATA, ECASE -->
 
   <div class="placeholder">
-
+    
   </div>
 
 
@@ -372,7 +372,60 @@
   <!-- ECRIRE ICI LA DESCRIPTION DE IMPLEMENTATION EVAL POUR ELAM, EAPP, ELET, EDATA, ECASE -->
 
   <div class="placeholder">
-   
+      <p>
+        Pour "ELam", un lambda s'évalue en une fermeture qui capture l'environnement courant. 
+        On retourne directement un "VLam" contenant le nom du paramètre, le corps de la fonction, 
+        et l'environnement au moment de la création du lambda. Le type du paramètre est ignoré 
+        puisqu'il a déjà été vérifié par "typeCheck".
+    </p>
+    <p>
+        Pour "EApp", on évalue d'abord la fonction avec "eval", puis on examine sa forme :
+    </p>
+    <ul>
+        <li>
+        Si c'est un "VLam", on évalue l'argument et on étend l'environnement capturé par la fermeture 
+        avec la liaison "(nomParametre, valeurArgument)". On évalue ensuite le corps dans ce nouvel environnement.
+        </li>
+        <li>
+        Si c'est un "VPrim", c'est une fonction primitive comme "+", "-" ou "*". On évalue l'argument 
+        et on appelle directement la fonction Haskell sous-jacente avec cet argument.
+        </li>
+    </ul>
+    <p>
+        Pour "ELet", toutes les liaisons sont mutuellement récursives. On construit un nouvel environnement 
+        "env2" qui contient toutes les liaisons du "let" évaluées dans "env2" lui-même, puis on y ajoute 
+        l'environnement courant. Cela fonctionne grâce à la paresse de Haskell — les valeurs ne sont 
+        calculées que lorsqu'elles sont demandées, ce qui permet à chaque liaison de référencer les autres. 
+        On évalue ensuite le corps dans "env2".
+    </p>
+    <p>
+        Pour "EData", on parcourt la liste des types déclarés avec "ajouterType", qui appelle 
+        "ajouterConstructeur" sur chaque liste de constructeurs. Pour chaque constructeur, on examine 
+        le nombre d'arguments avec "compter" :
+    </p>
+    <ul>
+        <li>
+        Si le constructeur n'a pas d'arguments comme "True" ou "Nil", on crée directement un "VData" 
+        avec une liste vide d'arguments.
+        </li>
+        <li>
+        Si le constructeur a des arguments comme "Cons", on crée une chaîne de "VPrim" avec 
+        "accumulerArgs". Chaque "VPrim" reçoit un argument, l'ajoute à un accumulateur, et retourne 
+        le prochain "VPrim". Quand tous les arguments ont été reçus, on retourne le "VData" final 
+        avec les arguments dans le bon ordre grâce à "inverser".
+        </li>
+    </ul>
+    <p>
+        On ajoute tous ces constructeurs à l'environnement et on évalue le corps dans ce nouvel environnement.
+    </p>
+    <p>
+        Pour "ECase", on évalue d'abord l'expression à examiner avec "eval", ce qui donne un "VData" 
+        contenant le nom du constructeur et ses arguments. On appelle ensuite "trouverBranche" qui 
+        parcourt la liste des branches une par une jusqu'à trouver celle dont le nom du constructeur 
+        correspond. On extrait alors les variables liées et le corps de cette branche. On appelle 
+        "combiner" pour associer chaque variable à la valeur correspondante dans les arguments du "VData". 
+        On ajoute ces liaisons à l'environnement et on évalue le corps dans ce nouvel environnement.
+    </p>
   </div>
 
 
