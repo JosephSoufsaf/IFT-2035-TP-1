@@ -296,25 +296,34 @@
 
   <div class="placeholder">
     <p>
-        On reçoit une expression de la forme "(case expression ((branche1) (branche2) ...))". On commence par convertir l’expression à examiner avec "sexp2Exp". Ensuite, on appelle "convertirBranches", qui parcourt la liste des branches une par une en appelant "convertirUneBranche" sur chacune d’elles.
-        "convertirUneBranche" analyse ensuite la forme de la branche :
-        <ul>
-            <li>
-                Si la branche est de la forme "(Constructeur corps)", cela signifie que le constructeur ne possède pas de variables liées. 
-                On convertit alors le corps avec "sexp2Exp", puis on retourne un triplet "(nomConstructeur, [], corpsConverti)", 
-                où la liste vide représente l’absence de variables liées.
-            </li>
-
-            <li>
-                Si la branche est de la forme "((Constructeur x y) corps)", cela signifie que le constructeur possède des variables liées. 
-                On appelle alors "convertirVariables", qui parcourt la liste des variables une par une en appelant "id2Exp" sur chacune afin de vérifier 
-                qu’il s’agit bien d’identifiants valides et d’en extraire le nom. Ensuite, on convertit le corps avec "sexp2Exp"
-                et on retourne un triplet (nomConstructeur, variablesConverties, corpsConverti).
-            </li>
-        </ul>
+      On reçoit une expression de la forme "(data ((NomType Con1 (Con2 T1 T2) ...) ...) corps)". 
+      On convertit d'abord le corps avec "sexp2Exp". Ensuite, on appelle "convertirDeclarations", 
+      qui parcourt la liste des types déclarés un par un en appelant "convertirUneDeclaration" sur chacun.
     </p>
-
-    À chaque étape, si une conversion échoue, une erreur est immédiatement retournée. Si toutes les conversions réussissent, on construit finalement un "ECase" contenant l’expression convertie ainsi que la liste des branches converties.
+    <p>
+      "convertirUneDeclaration" extrait le premier élément de la liste comme nom du type, 
+      et passe le reste à "convertirConstructeurs", qui parcourt les constructeurs un par un 
+      en appelant "convertirUnConstructeur" sur chacun.
+    </p>
+    <p>"convertirUnConstructeur" examine la forme du constructeur :</p>
+    <ul>
+      <li>
+        Si c'est un symbole seul comme "True", le constructeur n'a pas d'arguments. 
+        On retourne directement une paire "(nomConstructeur, [])", où la liste vide représente 
+        l'absence d'arguments.
+      </li>
+      <li>
+        Si c'est une liste comme "(Cons Int ListInt)", le constructeur a des arguments. 
+        On appelle "convertirTypesArguments", qui parcourt les types d'arguments un par un 
+        en appelant "sexp2type" sur chacun pour le convertir en type Haskell. 
+        On retourne ensuite une paire "(nomConstructeur, typesConvertis)".
+      </li>
+    </ul>
+    <p>
+      À chaque étape, si une conversion échoue, une erreur est immédiatement retournée. 
+      Si toutes les conversions réussissent, on retourne un "EData" contenant la liste 
+      des types et constructeurs convertis ainsi que le corps converti.
+    </p>
   </div>
 
   <h2><span class="num-section">1.1</span> sexp2Exp pour case</h2>
