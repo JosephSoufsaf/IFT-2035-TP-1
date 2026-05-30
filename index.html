@@ -27,15 +27,15 @@
     line-height: 1.75;
   }
 
-  /* ---- IMPRESSION ---- */
-  @media print {
+  
+  /* @media print {
     body { font-size: 11pt; }
     .page { page-break-after: always; box-shadow: none; margin: 0; border-radius: 0; }
     .page:last-child { page-break-after: avoid; }
     .no-print { display: none; }
-  }
+  } */
 
-  /* ---- MISE EN PAGE ---- */
+  
   .page {
     width: 21cm;
     min-height: 29.7cm;
@@ -47,7 +47,7 @@
     position: relative;
   }
 
-  /* ---- EN-TÊTE ---- */
+  
   .entete {
     display: flex;
     justify-content: space-between;
@@ -71,7 +71,7 @@
     text-align: right;
   }
 
-  /* ---- PAGE TITRE ---- */
+  
   .page-titre {
     display: flex;
     flex-direction: column;
@@ -79,7 +79,7 @@
     min-height: 24cm;
   }
 
-  .titre-haut { }
+  
 
   .universite {
     font-family: var(--mono);
@@ -150,7 +150,7 @@
     line-height: 1.6;
   }
 
-  /* ---- NUMÉRO DE PAGE ---- */
+  
   .numero-page {
     position: absolute;
     bottom: 1.2cm;
@@ -283,7 +283,7 @@
   <div class="numero-page">— 1 —</div>
 </div>
 
-<!-- ==================== PAGE 2 : SECTION 1 ==================== -->
+<!-- ==================== PAGE 2 : SECTION 2 ==================== -->
 <div class="page">
   <div class="entete">
     <div class="entete-gauche">IFT 2035 — Rapport TP1</div>
@@ -360,7 +360,7 @@
   <div class="numero-page">— 2 —</div>
 </div>
 
-<!-- ==================== PAGE 3 : SECTION 1 ==================== -->
+<!-- ==================== PAGE 3 : SECTION 3 ==================== -->
 <div class="page">
   <div class="entete">
     <div class="entete-gauche">IFT 2035 — Rapport TP1</div>
@@ -427,36 +427,36 @@
     </p>
     <ul>
         <li>
-        Si c'est un "VLam", on évalue l'argument et on étend l'environnement capturé par la fermeture 
-        avec la liaison "(nomParametre, valeurArgument)". On évalue ensuite le corps dans ce nouvel environnement.
+          Si c'est un "VLam", on évalue l'argument et on étend l'environnement capturé par la fermeture 
+          avec la liaison "(nomParametre, valeurArgument)". On évalue ensuite le corps dans ce nouvel environnement.
         </li>
         <li>
-        Si c'est un "VPrim", c'est une fonction primitive comme "+", "-" ou "*". On évalue l'argument 
-        et on appelle directement la fonction Haskell sous-jacente avec cet argument.
+          Si c'est un "VPrim", c'est une fonction primitive comme "+", "-" ou "*". On évalue l'argument 
+          et on appelle directement la fonction Haskell sous-jacente avec cet argument.
         </li>
     </ul>
     <p>
         Pour "ELet", toutes les liaisons sont mutuellement récursives. On construit un nouvel environnement 
         "env2" qui contient toutes les liaisons du "let" évaluées dans "env2" lui-même, puis on y ajoute 
-        l'environnement courant. Cela fonctionne grâce à la paresse de Haskell — les valeurs ne sont 
+        l'environnement courant. Cela fonctionne grâce à la paresse de Haskell les valeurs ne sont 
         calculées que lorsqu'elles sont demandées, ce qui permet à chaque liaison de référencer les autres. 
         On évalue ensuite le corps dans "env2".
     </p>
     <p>
         Pour "EData", on parcourt la liste des types déclarés avec "ajouterType", qui appelle 
         "ajouterConstructeur" sur chaque liste de constructeurs. Pour chaque constructeur, on examine 
-        le nombre d'arguments avec "compter" :
+        le nombre d'arguments avec "compter".
     </p>
     <ul>
         <li>
-        Si le constructeur n'a pas d'arguments comme "True" ou "Nil", on crée directement un "VData" 
-        avec une liste vide d'arguments.
+          Si le constructeur n'a pas d'arguments comme "True" ou "Nil", on crée directement un "VData" 
+          avec une liste vide d'arguments.
         </li>
         <li>
-        Si le constructeur a des arguments comme "Cons", on crée une chaîne de "VPrim" avec 
-        "accumulerArgs". Chaque "VPrim" reçoit un argument, l'ajoute à un accumulateur, et retourne 
-        le prochain "VPrim". Quand tous les arguments ont été reçus, on retourne le "VData" final 
-        avec les arguments dans le bon ordre grâce à "inverser".
+          Si le constructeur a des arguments comme "Cons", on crée une chaîne de "VPrim" avec 
+          "accumulerArgs". Chaque "VPrim" reçoit un argument, l'ajoute à un accumulateur, et retourne 
+          le prochain "VPrim". Quand tous les arguments ont été reçus, on retourne le "VData" final 
+          avec les arguments dans le bon ordre grâce à "inverser".
         </li>
     </ul>
     <p>
@@ -515,11 +515,11 @@
   <h1><span class="num-section">03</span> Expérience générale</h1>
 
   <div class="placeholder">    
-    Notre expérience générale avec Haskell a été enrichissante. C"est un langage qui nous a forcés à repenser notre façon de concevoir un programme, en particulier à travers la récursion, 
+    Notre expérience générale avec Haskell a été enrichissante. C'est un langage qui nous a forcés à repenser notre façon de concevoir un programme, en particulier à travers la récursion, 
     les fermetures et les types algébriques. Toutefois, nous observons que ce TP évaluait davantage notre compréhension de la conception des langages de programmation
     syntaxe, grammaire, environnements, typage statique 
     que notre maîtrise de Haskell en tant que tel. Des exercices portant sur les classes de types, la paresse auraient peut-être mieux ciblé les spécificités du langage. 
-    Cela dit, ce TP nous a permis de développer une compréhension concrète du processus suivi d"un interpréteur de l"analyse syntaxique jusqu"à l"évaluation.
+    Cela dit, ce TP nous a permis de développer une compréhension concrète du processus suivi d'un interpréteur de l'analyse syntaxique jusqu'à l'évaluation.
   </div>
 
   <p>
